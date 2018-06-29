@@ -1,0 +1,30 @@
+{
+  "name": "CTA",
+  "productName": "CTA Desktop App",
+  "version": "1.0.0",
+  "description": "Lite Desktop app for data posting.",
+  "main": "main.js",
+  "repository": "",
+  "author": "Aashish Baidya, Aaditya Koirala",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^1.8.4"
+  },
+  "scripts": {
+    "start": "electron .",
+    "start-mac": "/Applications/Electron.app/Contents/MacOS/Electron ."
+  },
+  "dependencies": {
+    "bootstrap": "4.0.0-beta.3",
+    "cheerio": "^0.22.0",
+    "jquery": "^3.2.1",
+    "popper.js": "^1.12.9",
+    "sql.js": "^0.4.0",
+    "tether": "^1.4.0"
+  },
+  "standard": {
+    "globals": [
+      "$"
+    ]
+  }
+}
