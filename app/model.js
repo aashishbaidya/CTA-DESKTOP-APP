@@ -113,7 +113,7 @@ module.exports.initDb = function (appPath, callback) {
 }
 
 /*
-  Populates the People List.
+  Populates the Menu List.
 */
 
 module.exports.getMenu = function () {
@@ -213,40 +213,34 @@ module.exports.saveImportedData = function (rows) {
     model.getMenu()
   }
 }
-/*
-  Fetch a person's data from the database.
-*/
-module.exports.getPerson = function (pid) {
-  let db = SQL.dbOpen(window.model.db)
-  if (db !== null) {
-    let query = 'SELECT * FROM `people` WHERE `person_id` IS ?'
-    let statement = db.prepare(query, [pid])
-    try {
-      if (statement.step()) {
-        let values = [statement.get()]
-        let columns = statement.getColumnNames()
-        return _rowsFromSqlDataObject({values: values, columns: columns})
-      } else {
-        console.log('model.getPeople', 'No data found for person_id =', pid)
-      }
-    } catch (error) {
-      console.log('model.getPeople', error.message)
-    } finally {
-      SQL.dbClose(db, window.model.db)
-    }
-  }
-}
 
-/*
-  Delete a person's data from the database.
-*/
-module.exports.deleteData = function (pid, pid_table) {
+
+module.exports.updateData = function (pid, edited_key, edited_value) {
+  let data={}
   let db = SQL.dbOpen(window.model.db)
   if (db !== null) {
-    let query = 'UPDATE `_table_main` SET `_delete_flag` = "1" WHERE `_id_table` = "'+[pid]+'" ;'
-    let statement = db.prepare(query)
+  
+    let query = 'SELECT * FROM `_table_main` WHERE `_id_table` IS ? ;'
+    let statement = db.prepare(query, [pid])
+    
+    if (statement.step()) {
+      let values = [statement.get()]
+      let columns = statement.getColumnNames()
+      // console.log(_rowsFromSqlDataObject({values: values, columns: columns}), pid, edited_key, edited_value)
+      data=_rowsFromSqlDataObject({values: values, columns: columns})
+    } else {
+      console.log('model.getPeople', 'No data found for person_id =', pid)
+    }
+
+    
+    let json_data = JSON.parse(data[0]._table_json)
+    json_data['formdata'][edited_key] = edited_value
+
+    let json_string = JSON.stringify(json_data)
+    let query1 = `UPDATE "_table_main" SET "_table_json" = '`+[ json_string ]+`' WHERE "_id_table" = "`+[pid]+`" ;`
+    let statement1 = db.prepare(query1)
     try {
-      if (statement.run()) {
+      if (statement1.run()) {
         console.log('Deleted', pid)
         
       } else {
@@ -256,18 +250,43 @@ module.exports.deleteData = function (pid, pid_table) {
       console.log('model.deleteData', error.message)
     } finally {
       SQL.dbClose(db, window.model.db)
-      model.getTableData(pid_table)
     }
   }
 }
 
 /*
-  Insert or update a person's data in the database.
+  Delete a row's data from the database.
 */
+module.exports.deleteData = function (pid, pid_table) {
+  let status=false
+  let db = SQL.dbOpen(window.model.db)
+  if (db !== null) {
+    let query = 'UPDATE `_table_main` SET `_delete_flag` = "1" WHERE `_id_table` = "'+[pid]+'" ;'
+    let statement = db.prepare(query)
+    try {
+      if (statement.run()) {
+        console.log('Deleted', pid)
+        status=true  
+      } else {
+        console.log('model.deleteData', 'No data found for person_id =', pid)
+      }
+    } catch (error) {
+      console.log('model.deleteData', error.message)
+    } finally {
+      SQL.dbClose(db, window.model.db)
+      
+    }
+  }
+  return status
+}
+
+module.exports.uploadData = function (argument) {
+  // body...
+}
+
 module.exports.saveFormData = function (tableName, keyValue, callback) {
   if (keyValue.columns.length > 0) {
     let db = SQL.dbOpen(window.model.db)
-    console.log('hererer');
     if (db !== null) {
       let query = 'INSERT OR REPLACE INTO `' + tableName
       query += '` (`' + keyValue.columns.join('`, `') + '`)'
