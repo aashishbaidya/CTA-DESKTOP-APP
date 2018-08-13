@@ -3,16 +3,14 @@ const path = require('path')
 const electron = require('electron');
 const model = require(path.join(__dirname, 'model.js'))
 const dialog = electron.remote;
+const request = require('request');
+const rp = require('request-promise');
 module.exports.openFile = function () {
-  dialog.dialog.showOpenDialog(function(fileNames){
-
+dialog.dialog.showOpenDialog(function(fileNames){
       if( fileNames === undefined ){
-
         alert('No file was Selected')
         return ;
-
         }
-
     var fileName = fileNames[0]
     alert(fileName);
     window.model.importData(fileName)
@@ -45,10 +43,13 @@ module.exports.showMenu = function (rowsObject) {
 }
 
 module.exports.home = function (e) {
-  let editPerson = fs.readFileSync(path.join(htmlPath, 'home.html'), 'utf8')
-  $('#main_body').html(editPerson)
-  
-
+  let homePage = fs.readFileSync(path.join(htmlPath, 'home.html'), 'utf8')
+  $('#main_body').html(homePage)
+  let rowsObject = window.model.getUserData()
+  if (rowsObject[0]){
+    let elem = `<button type="button" class="btn btn-primary" value="Submit" onclick="window.model.userLogOut()">Log Out</button>`
+    $('#loginForm').html(elem)
+  }
 }
 
 module.exports.showTableData = function (rowsObject) {
@@ -155,12 +156,15 @@ module.exports.editOnTableView = function (td_id) {
 module.exports.deleteData = function (pid) {
   let status = model.deleteData(pid.split('_')[1], pid.split('_')[2])
   if (status){
-        $('#row_'+pid.split('_')[1]).remove()
-      }
+    $('#row_'+pid.split('_')[1]).remove()
+  }
 }
 
 module.exports.uploadData = function (pid) {
-  model.uploadData(pid.split('_')[1], pid.split('_')[2])
+  let status = model.uploadData(pid.split('_')[1], pid.split('_')[2])
+  if (status){
+    $('#row_'+pid.split('_')[1]).remove()
+  }
 }
 module.exports.getFormFieldValues = function (formId) {
   let keyValue = {columns: [], values: []}
@@ -171,4 +175,41 @@ module.exports.getFormFieldValues = function (formId) {
   return keyValue
 }
 
-
+module.exports.userLogin = function() {
+  var username = document.getElementById("username").value;
+  var password = document.getElementById("password").value;
+  console.log(username,password);
+  var options = {
+    method: 'POST',
+    uri: 'https://cta.wwfnepal.org.np/LoginApi/check_user',
+    form: {
+        // Like <input type="text" name="name">
+        data: JSON.stringify( {"username":username,"password":password} )
+    },
+    headers: {
+        /* 'content-type': 'application/x-www-form-urlencoded' */ // Is set automatically
+    }
+  };
+  rp(options)
+    .then(function (body) {
+        request(options, function (error, response, body) {
+          var BODY = JSON.parse(body);
+          console.log(BODY);
+          if (BODY.status === 201) {
+            alert('Login failed. Please check your username and password and try again.');
+            // console.log('statusCode:', response && response.statusCode); 
+            console.log('body:', body);
+          }
+          else if(BODY.status ===200 ) {
+            alert("Login Successful.");
+            console.log(typeof(window.model.db));
+            window.model.saveUser(username, password);
+            window.view.home()
+           }
+        });    
+      })
+    .catch(function (err) {
+        alert('Login failed. Please check your username and password and try again.');
+        console.log(err);
+    });
+}
