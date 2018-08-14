@@ -104,9 +104,10 @@ module.exports.showTableData = function (rowsObject) {
   $('#table_body').html(body_cols)
 
   
-  $('#data-list a.upload').each(function (idx, obj) {
+  $('#data-list button.upload').each(function (idx, obj) {
     $(obj).on('click', function () {
       window.view.uploadData(this.id)
+      
     })
   })
   
@@ -161,6 +162,7 @@ module.exports.deleteData = function (pid) {
 }
 
 module.exports.uploadData = function (pid) {
+  console.log('here uploaded')
   let status = model.uploadData(pid.split('_')[1], pid.split('_')[2])
   if (status){
     $('#row_'+pid.split('_')[1]).remove()

@@ -4,7 +4,8 @@ const path = require('path')
 const fs = require('fs')
 const SQL = require('sql.js')
 const view = require(path.join(__dirname, 'view.js'))
-
+const request = require('request');
+const rp = require('request-promise');
 /*
   SQL.js returns a compact object listing the columns separately from the
   values or rows of data. This function joins the column names and
@@ -141,7 +142,7 @@ module.exports.getTableData = function (tid) {
   let db = SQL.dbOpen(window.model.db)
   let datas={}
   if (db !== null) {
-    let query = 'SELECT * FROM `_table_main` WHERE `_table_id` = '+ [tid] +' AND `_delete_flag` = "0" ORDER BY `_table_id` DESC;'
+    let query = 'SELECT * FROM `_table_main` WHERE `_table_id` = '+ [tid] +' AND `_delete_flag` = "0" AND `_table_status` = "Not Sent" ORDER BY `_table_id` DESC;'
     console.log(query);
     try {
       let row = db.exec(query)
@@ -197,29 +198,31 @@ module.exports.userLogOut = function () {
 
 module.exports.selectRequiredData = function (rows, db) {
   $.each( rows, function( key, row ) {
-
-    let query1 = "select max(datetime) from '_table_main' WHERE imei;"
-    let row1 = db.exec(query1)
-    console.log(row1);
-    row1 = _rowsFromSqlDataObject(row)
-
+    let db1 = SQL.dbOpen(window.model.db)
+    let query1 = "select max(_table_date) from '_table_main' WHERE imei='"+row['imei']+"';"
+    console.log(query1);
+    let row1 = db1.exec(query1)
+    SQL.dbClose(db1, window.model.db)
     
     // console.log(_rowsFromSqlDataObject({values: values, columns: columns}), pid, edited_key, edited_value)
-    data=_rowsFromSqlDataObject({values: values, columns: columns})
+    var query = "SELECT * FROM '_table_main' WHERE _delete_flag='0' AND _table_status='Not Sent' AND imei = '"+ row['imei'] +"';"
+    if (row1[0]['values'][0][0]){
+      query = "SELECT * FROM '_table_main' WHERE _delete_flag='0' AND _table_status='Not Sent' AND imei = '"+ row['imei'] +"' AND _table_date > '"+row1[0]['values'][0][0]+"';"
+    }
 
 
-
-    let query = "SELECT * FROM '_table_main' WHERE _delete_flag='0' AND imei = '"+ row['imei'] +"' AND date=;"
+    console.log('here', query)
     try {
       let row = db.exec(query)
       if (row !== undefined && row.length > 0) {
         
         row = _rowsFromSqlDataObject(row[0], db)
         //model.selectRequiredData(row)
+        console.log(row);
         model.saveImportedData(row)
       }
     } catch (error) {
-      console.log('model.importData', error.message)
+      console.log('model.selectRequiredData', error.message)
     }
   });
 
@@ -230,13 +233,16 @@ module.exports.importData = function (filePath) {
   let db = SQL.dbOpen(filePath)
   if (db !== null) {
 
-   let query = "SELECT DISTINCT iemi FROM '_table_main';"
+   let query = "SELECT DISTINCT imei FROM '_table_main';"
     try {
       let row = db.exec(query)
+      console.log('here');
       if (row !== undefined && row.length > 0) {
         
         row = _rowsFromSqlDataObject(row[0], db)
-        model.selectRequiredData(row)
+        console.log('here', row)
+        model.selectRequiredData(row, db)
+
         // model.saveImportedData(row)
 
       }
@@ -253,17 +259,16 @@ module.exports.saveImportedData = function (rows) {
   let db = SQL.dbOpen(window.model.db)
   try {
     let query = 'INSERT INTO `_table_main`'
-      query += ' ("_table_id", "_table_Name", "_table_date", "_table_json", "_table_Gps", "_table_photo", "_table_status", "_delete_flag", "imei", "_form_status") VALUES'
+      query += ' ("_table_id", "_table_Name", "_table_date", "_table_json", "_table_Gps", "_table_photo", "_table_status", "_delete_flag", "imei") VALUES'
 
       $.each( rows, function( key, row ) {
         if(key != 0){
           query += ' ,'
         }
-        query += `  ('`+ row._table_id + `','` + row._table_Name + `','` + row._table_date + `','` + row._table_json + `','` + row._table_Gps + `','` + row._table_photo + `','` + row._table_status + `','` + row._delete_flag + `','` + row.imei + `','` + row._form_status +`')`
-  
+        query += `  ('` + row._table_id + `','` + row._table_Name + `','` + row._table_date + `','` + row._table_json + `','` + row._table_Gps + `','` + row._table_photo + `','` + row._table_status + `','` + row._delete_flag + `','` + row.imei +`')`
       });
     query += ';'
-    // console.log(query);
+     console.log(query);
     let result = db.exec(query)
     if (Object.keys(result).length === 0 &&
       typeof result.constructor === 'function') {
@@ -364,39 +369,45 @@ module.exports.uploadData = function (pid) {
   let status=false
   var userData = window.model.getUserData()
   if (!userData[0]){
+    alert("Please login first to upload the data.");
     return status
   }
+  
   let db = SQL.dbOpen(window.model.db)
   if (db !== null) {
     let data = window.model.getRowData(pid, db)
 
     var options = {
       method: 'POST',
-      uri: 'https://cta.wwfnepal.org.np/LoginApi/check_user',
+      uri: 'https://cta.wwfnepal.org.np/api/index.php/enter_record',
       form: {
           // Like <input type="text" name="name">
-          data: JSON.stringify( {"username":username,"password":password} )
+          data: data[0]['_table_json'],
+          username: userData[0]['username'],
+          password: userData[0]['password'],
       },
       headers: {
           /* 'content-type': 'application/x-www-form-urlencoded' */ // Is set automatically
       }
     };
+    console.log(options);
     rp(options)
       .then(function (body) {
           request(options, function (error, response, body) {
             var BODY = JSON.parse(body);
             console.log(BODY);
-            if (BODY.status === 201) {
+            if(BODY.status ===200 ) {
+              alert("Submission Successful.");
+              window.model.markAsUploaded(pid, db);
+              status = true
+             }
+            else {
               alert('Submission failed. Data invalid.');
               // console.log('statusCode:', response && response.statusCode); 
               console.log('body:', body);
               status = false
             }
-            else if(BODY.status ===200 ) {
-              alert("Submission Successful.");
-              window.model.markAsUploaded(pid, db);
-              status = true
-             }
+            
           });    
         })
       .catch(function (err) {
@@ -409,10 +420,10 @@ module.exports.uploadData = function (pid) {
 }
 
 
-module.exports.markAsUploaded = function (pid, db) {
-
-      let query = 'UPDATE `_table_main` SET `_is_submitted` = "1" WHERE `_id_table` = "'+[pid]+'" ;'
-      let statement = db.prepare(query)
+module.exports.markAsUploaded = function (pid) {
+      let db1 = SQL.dbOpen(window.model.db)
+      let query = 'UPDATE `_table_main` SET `_table_status` = "Sent" WHERE `_id_table` = "'+[pid]+'" ;'
+      let statement = db1.prepare(query)
       try {
         if (statement.run()) {
           console.log('Submitted', pid)
@@ -422,7 +433,7 @@ module.exports.markAsUploaded = function (pid, db) {
       } catch (error) {
         console.log('model.uploadData', error.message)
       } finally {
-        SQL.dbClose(db, window.model.db) 
+        SQL.dbClose(db1, window.model.db) 
       }
    
 }
