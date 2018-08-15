@@ -10,10 +10,7 @@ const rp = require('request-promise');
   SQL.js returns a compact object listing the columns separately from the
   values or rows of data. This function joins the column names and
   values into a single objects and collects these together by row id.
-  {
-    0: {first_name: "Jango", last_name: "Reinhardt", person_id: 1},
-    1: {first_name: "Svend", last_name: "Asmussen", person_id: 2},
-  }
+
   This format makes updating the markup easy when the DOM input id attribute
   is the same as the column name. See view.showPeople() for an example.
 */
@@ -244,7 +241,6 @@ module.exports.importData = function (filePath) {
         model.selectRequiredData(row, db)
 
         // model.saveImportedData(row)
-
       }
     } catch (error) {
       console.log('model.importData', error.message)
@@ -367,12 +363,22 @@ module.exports.getRowData = function (pid, db) {
 
 module.exports.uploadData = function (pid) {
   let status=false
+  var photos={}
   var userData = window.model.getUserData()
   if (!userData[0]){
     alert("Please login first to upload the data.");
     return status
   }
   
+  if (data[0]['_table_photo'] != "no_photo" && data[0]['_table_photo'] != "" && data[0]['_table_photo'].length > 8){
+    var imgs = data[0]['_table_photo'].split(",");
+    $.each( imgs, function( key, img ) {
+      var imageAsBase64 = fs.readFileSync(path.join(__dirname, 'images', img), 'base64');
+      // console.log(path.join(__dirname, 'images', 'x-icon.png'), 'data:image/jpeg;base64,' , imageAsBase64)
+      photos['photo'+key] = 'data:image/jpeg;base64,'+imageAsBase64
+    });
+  }
+
   let db = SQL.dbOpen(window.model.db)
   if (db !== null) {
     let data = window.model.getRowData(pid, db)
@@ -384,7 +390,7 @@ module.exports.uploadData = function (pid) {
           // Like <input type="text" name="name">
           data: data[0]['_table_json'],
           username: userData[0]['username'],
-          password: userData[0]['password'],
+          password: userData[0]['password'], 
       },
       headers: {
           /* 'content-type': 'application/x-www-form-urlencoded' */ // Is set automatically
