@@ -362,22 +362,20 @@ module.exports.getRowData = function (pid, db) {
 }
 
 module.exports.uploadData = function (pid) {
+  $('#modalMessage').html('Uploading, Please wait ... ');
+  $("#myModalFooter").hide();
+  $('#myModal').modal('show');
+
   let status=false
-  var photos={}
   var userData = window.model.getUserData()
   if (!userData[0]){
-    alert("Please login first to upload the data.");
+    $('#modalMessage').html('Please login first to upload the data.');
+    $("#myModalFooter").show();
     return status
   }
   
-  if (data[0]['_table_photo'] != "no_photo" && data[0]['_table_photo'] != "" && data[0]['_table_photo'].length > 8){
-    var imgs = data[0]['_table_photo'].split(",");
-    $.each( imgs, function( key, img ) {
-      var imageAsBase64 = fs.readFileSync(path.join(__dirname, 'images', img), 'base64');
-      // console.log(path.join(__dirname, 'images', 'x-icon.png'), 'data:image/jpeg;base64,' , imageAsBase64)
-      photos['photo'+key] = 'data:image/jpeg;base64,'+imageAsBase64
-    });
-  }
+  
+  
 
   let db = SQL.dbOpen(window.model.db)
   if (db !== null) {
@@ -396,6 +394,19 @@ module.exports.uploadData = function (pid) {
           /* 'content-type': 'application/x-www-form-urlencoded' */ // Is set automatically
       }
     };
+    if (data[0]['_table_photo'] != "no_photo" && data[0]['_table_photo'] != "" && data[0]['_table_photo'].length > 8){
+      var imgs = data[0]['_table_photo'].split(",");
+      $.each( imgs, function( key, img ) {
+        var imageAsBase64 = fs.readFileSync(path.join(__dirname, 'images', img), 'base64');
+        // console.log(path.join(__dirname, 'images', 'x-icon.png'), 'data:image/jpeg;base64,' , imageAsBase64)
+        key = key + 1;
+        if (key == 1){
+          option['photo'] = 'data:image/jpeg;base64,'+imageAsBase64  
+        }else{
+        option['photo'+key] = 'data:image/jpeg;base64,'+imageAsBase64
+        }
+      });
+    }
     console.log(options);
     rp(options)
       .then(function (body) {
@@ -403,12 +414,15 @@ module.exports.uploadData = function (pid) {
             var BODY = JSON.parse(body);
             console.log(BODY);
             if(BODY.status ===200 ) {
-              alert("Submission Successful.");
+              $('#modalMessage').html('Submission Successful.');
+              $("#myModalFooter").show();
               window.model.markAsUploaded(pid, db);
               status = true
              }
             else {
-              alert('Submission failed. Data invalid.');
+              $('#modalMessage').html('Submission failed. Data invalid.');
+              $("#myModalFooter").show();
+
               // console.log('statusCode:', response && response.statusCode); 
               console.log('body:', body);
               status = false
@@ -417,10 +431,12 @@ module.exports.uploadData = function (pid) {
           });    
         })
       .catch(function (err) {
-          alert('Submission failed. Please check your internet connection and try again.');
+          $('#modalMessage').html('Submission failed. Please check your internet connection and try again.');
+          $("#myModalFooter").show();
           console.log(err);
       });
   }
+  
   SQL.dbClose(db, window.model.db) 
   return status
 }

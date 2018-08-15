@@ -94,7 +94,6 @@ module.exports.showTableData = function (rowsObject) {
        '<td><button><img id="del-pid_' + row._id_table + '_' + row._table_id +
        '" class="icon delete" src="' + path.join(__dirname, 'img', 'x-icon.png') +
        '"></button></div></td>'
-    
     col += '</tr>'
 
     body_cols += col  
@@ -178,9 +177,13 @@ module.exports.getFormFieldValues = function (formId) {
 }
 
 module.exports.userLogin = function() {
+  $('#modalMessage').html('Authenticating, Please wait ... ');
+  $("#myModalFooter").hide();
+  $('#myModal').modal('show');
   var username = document.getElementById("username").value;
   var password = document.getElementById("password").value;
   console.log(username,password);
+  
   var options = {
     method: 'POST',
     uri: 'https://cta.wwfnepal.org.np/LoginApi/check_user',
@@ -198,20 +201,26 @@ module.exports.userLogin = function() {
           var BODY = JSON.parse(body);
           console.log(BODY);
           if (BODY.status === 201) {
-            alert('Login failed. Please check your username and password and try again.');
+            $('#modalMessage').html('Login failed. Invalid username or password. Try again.');
+            $("#myModalFooter").show();
             // console.log('statusCode:', response && response.statusCode); 
             console.log('body:', body);
+
           }
           else if(BODY.status ===200 ) {
-            alert("Login Successful.");
+            $('#modalMessage').html('Login Successful.');
+            $("#myModalFooter").show();
             console.log(typeof(window.model.db));
             window.model.saveUser(username, password);
-            window.view.home()
+            window.view.home();
+           
            }
         });    
       })
     .catch(function (err) {
-        alert('Login failed. Please check your username and password and try again.');
+        $('#modalMessage').html('Login failed. Please check your username and password and try again.');
+        $("#myModalFooter").show();
         console.log(err);
     });
+   
 }
