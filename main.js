@@ -14,6 +14,7 @@ var mainWindow = null
 app.on('ready', function () {
   mainWindow = new BrowserWindow({
     backgroundColor: 'lightgray',
+    icon: path.join(__dirname, 'app/img/icon.png'),
     title: config.productName,
     show: false,
     webPreferences: {

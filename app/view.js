@@ -24,21 +24,21 @@ module.exports.loginUser = function () {
 }
 
 
-
 module.exports.showMenu = function (rowsObject) {
   let markup = `<li class="nav-item">
+  <img style="margin-left:45px;" src="../img/logo.png">
+  <hr>
   <a class="nav-link add" href="#" onclick="window.view.home(this)">Home</a>
   </li>`
   for (let rowId in rowsObject) {
     let row = rowsObject[rowId]
-
     markup += `<li class="nav-item">
       <a class="nav-link" href="#" onclick="window.view.listTableData(`+ row._table_id + `)">
       `+ row._table_Name + `</a>
     </li>
     <li class="nav-item">`
     }
-    console.log(markup);
+    
   $('#mainMenu').html(markup)
 }
 
@@ -47,7 +47,8 @@ module.exports.home = function (e) {
   $('#main_body').html(homePage)
   let rowsObject = window.model.getUserData()
   if (rowsObject[0]){
-    let elem = `<button type="button" class="btn btn-primary" value="Submit" onclick="window.model.userLogOut()">Log Out</button>`
+    let elem = `<p>Logged in as `+ rowsObject[0].username +`</p>
+                <button type="button" class="btn btn-primary" value="Submit" onclick="window.model.userLogOut()">Log Out</button>`
     $('#loginForm').html(elem)
   }
 }
@@ -56,10 +57,9 @@ module.exports.showTableData = function (rowsObject) {
   console.log('rowslength' + " "+rowsObject.length, rowsObject);
   if (rowsObject[0]){
   $('#data_list_header').html(rowsObject[0]._table_Name)
-  let table = `<table class="table table-bordered">
+  let table = `<table id="myTable" class="table table-bordered">
                   <thead>
                     <tr id="table_header" class="text-capitalize">
-                      
                     </tr>
                   </thead>
                   <tbody id="table_body">
@@ -92,7 +92,7 @@ module.exports.showTableData = function (rowsObject) {
     col+='<td><button class="upload" id="upload-pid_' + row._id_table + '_' + row._table_id +
        '">Upload</button></td>' +
        '<td><button><img id="del-pid_' + row._id_table + '_' + row._table_id +
-       '" class="icon delete" src="' + path.join(__dirname, 'img', 'x-icon.png') +
+       '" height="15px" width="15px" src="' + path.join(__dirname, 'img', 'x-icon.png') +
        '"></button></div></td>'
     col += '</tr>'
 
@@ -122,8 +122,8 @@ module.exports.showTableData = function (rowsObject) {
 }
 
 module.exports.listTableData = function (_table_id) {
-  let people = fs.readFileSync(path.join(htmlPath, 'people.html'), 'utf8')
-  $('#main_body').html(people)
+  let details = fs.readFileSync(path.join(htmlPath, 'details.html'), 'utf8')
+  $('#main_body').html(details)
   console.log(_table_id)
   window.model.getTableData(_table_id)
 }
@@ -188,11 +188,11 @@ module.exports.userLogin = function() {
     method: 'POST',
     uri: 'http://www.naxa.com.np/cta/LoginApi/check_user',
     form: {
-        // Like <input type="text" name="name">
+        
         data: JSON.stringify( {"username":username,"password":password} )
     },
     headers: {
-        /* 'content-type': 'application/x-www-form-urlencoded' */ // Is set automatically
+       
     }
   };
   rp(options)

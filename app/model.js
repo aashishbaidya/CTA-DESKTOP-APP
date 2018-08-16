@@ -117,19 +117,21 @@ module.exports.initDb = function (appPath, callback) {
 
 module.exports.getMenu = function () {
   let db = SQL.dbOpen(window.model.db)
+  let row_data={}
   if (db !== null) {
     let query = "SELECT DISTINCT `_table_Name`, `_table_id` FROM `_table_main`"
     try {
       let row = db.exec(query)
       if (row !== undefined && row.length > 0) {
         
-        row = _rowsFromSqlDataObject(row[0])
-        view.showMenu(row)
-        console.log(row)
+        row_data = _rowsFromSqlDataObject(row[0])
+        
+        // console.log(row)
       }
     } catch (error) {
       console.log('model.getMenu', error.message)
     } finally {
+      view.showMenu(row_data)
       SQL.dbClose(db, window.model.db)
     }
   }
@@ -276,7 +278,7 @@ module.exports.saveImportedData = function (rows) {
     if (Object.keys(result).length === 0 &&
       typeof result.constructor === 'function') {
       // console.log('Insertrd.' + result)
-      import_count =import_count + rows.length()
+      import_count =import_count + Object.keys(rows).length
     } else {
       console.log('model.initDb.createDb failed.')
     }
