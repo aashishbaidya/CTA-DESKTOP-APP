@@ -12,7 +12,7 @@ dialog.dialog.showOpenDialog(function(fileNames){
         return ;
         }
     var fileName = fileNames[0]
-    alert(fileName);
+    // alert(fileName);
     window.model.importData(fileName)
     
   })

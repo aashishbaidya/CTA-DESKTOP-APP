@@ -6,6 +6,7 @@ const SQL = require('sql.js')
 const view = require(path.join(__dirname, 'view.js'))
 const request = require('request');
 const rp = require('request-promise');
+var import_count = 0;
 /*
   SQL.js returns a compact object listing the columns separately from the
   values or rows of data. This function joins the column names and
@@ -197,7 +198,7 @@ module.exports.selectRequiredData = function (rows, db) {
   $.each( rows, function( key, row ) {
     let db1 = SQL.dbOpen(window.model.db)
     let query1 = "select max(_table_date) from '_table_main' WHERE imei='"+row['imei']+"';"
-    console.log(query1);
+    // console.log(query1);
     let row1 = db1.exec(query1)
     SQL.dbClose(db1, window.model.db)
     
@@ -212,10 +213,9 @@ module.exports.selectRequiredData = function (rows, db) {
     try {
       let row = db.exec(query)
       if (row !== undefined && row.length > 0) {
-        
         row = _rowsFromSqlDataObject(row[0], db)
         //model.selectRequiredData(row)
-        console.log(row);
+        // console.log(row);
         model.saveImportedData(row)
       }
     } catch (error) {
@@ -227,17 +227,22 @@ module.exports.selectRequiredData = function (rows, db) {
 
 
 module.exports.importData = function (filePath) {
+  $('#modalMessage').html('Importing, Please wait ... ');
+  $("#myModalFooter").hide();
+  $('#myModal').modal('show');
+
   let db = SQL.dbOpen(filePath)
+  import_count = 0
   if (db !== null) {
 
    let query = "SELECT DISTINCT imei FROM '_table_main';"
     try {
       let row = db.exec(query)
-      console.log('here');
+      // console.log('here');
       if (row !== undefined && row.length > 0) {
         
         row = _rowsFromSqlDataObject(row[0], db)
-        console.log('here', row)
+        // console.log('here', row)
         model.selectRequiredData(row, db)
 
         // model.saveImportedData(row)
@@ -246,6 +251,8 @@ module.exports.importData = function (filePath) {
       console.log('model.importData', error.message)
     } finally {
       SQL.dbClose(db, filePath)
+      $('#modalMessage').html('Imported '+ import_count + ' submissions.');
+      $("#myModalFooter").show();
     }
   }
 }
@@ -264,11 +271,12 @@ module.exports.saveImportedData = function (rows) {
         query += `  ('` + row._table_id + `','` + row._table_Name + `','` + row._table_date + `','` + row._table_json + `','` + row._table_Gps + `','` + row._table_photo + `','` + row._table_status + `','` + row._delete_flag + `','` + row.imei +`')`
       });
     query += ';'
-     console.log(query);
+    
     let result = db.exec(query)
     if (Object.keys(result).length === 0 &&
       typeof result.constructor === 'function') {
-      console.log('Insertrd.' + result)
+      // console.log('Insertrd.' + result)
+      import_count =import_count + rows.length()
     } else {
       console.log('model.initDb.createDb failed.')
     }
@@ -362,6 +370,7 @@ module.exports.getRowData = function (pid, db) {
 }
 
 module.exports.uploadData = function (pid) {
+  // console.log('data:image/jpeg;base64,'+fs.readFileSync(path.join(__dirname, '../../../images', 'x-icon.png'), 'base64'));
   $('#modalMessage').html('Uploading, Please wait ... ');
   $("#myModalFooter").hide();
   $('#myModal').modal('show');
