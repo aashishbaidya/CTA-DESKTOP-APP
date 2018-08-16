@@ -186,7 +186,7 @@ module.exports.userLogin = function() {
   
   var options = {
     method: 'POST',
-    uri: 'https://cta.wwfnepal.org.np/LoginApi/check_user',
+    uri: 'http://www.naxa.com.np/cta/LoginApi/check_user',
     form: {
         // Like <input type="text" name="name">
         data: JSON.stringify( {"username":username,"password":password} )

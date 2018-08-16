@@ -392,7 +392,7 @@ module.exports.uploadData = function (pid) {
 
     var options = {
       method: 'POST',
-      uri: 'https://cta.wwfnepal.org.np/api/index.php/enter_record',
+      uri: 'http://www.naxa.com.np/cta/api/index.php/enter_record',
       form: {
           // Like <input type="text" name="name">
           data: data[0]['_table_json'],
