@@ -409,7 +409,7 @@ module.exports.uploadData = function (pid, pid_table) {
       var photo = {};
       $.each( imgs, function( key, img ) {
         try {
-          var imageAsBase64 = fs.readFileSync(path.join(__dirname, 'Photos', img ), 'base64');
+          var imageAsBase64 = fs.readFileSync(path.join(__dirname, '../../../../Photos', img ), 'base64');
           
           key = key + 1;
           if (key == 1){
