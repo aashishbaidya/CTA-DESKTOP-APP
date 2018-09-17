@@ -203,7 +203,7 @@ module.exports.selectRequiredData = function (rows, db) {
     // console.log(query1);
     let row1 = db1.exec(query1)
     SQL.dbClose(db1, window.model.db)
-    
+    console.log(row1[0]['values'][0][0]);
     // console.log(_rowsFromSqlDataObject({values: values, columns: columns}), pid, edited_key, edited_value)
     var query = "SELECT * FROM '_table_main' WHERE _delete_flag='0' AND _table_status='Not Sent' AND imei = '"+ row['imei'] +"';"
     if (row1[0]['values'][0][0]){
@@ -211,13 +211,13 @@ module.exports.selectRequiredData = function (rows, db) {
     }
 
 
-    console.log('here', query)
+    console.log(query, "hereee");
     try {
       let row = db.exec(query)
       if (row !== undefined && row.length > 0) {
         row = _rowsFromSqlDataObject(row[0], db)
         //model.selectRequiredData(row)
-        // console.log(row);
+        console.log(row);
         model.saveImportedData(row)
       }
     } catch (error) {
@@ -263,6 +263,7 @@ module.exports.importData = function (filePath) {
 module.exports.saveImportedData = function (rows) {
   let db = SQL.dbOpen(window.model.db)
   try {
+    console.log('here');
     let query = 'INSERT INTO `_table_main`'
       query += ' ("_table_id", "_table_Name", "_table_date", "_table_json", "_table_Gps", "_table_photo", "_table_status", "_delete_flag", "imei") VALUES'
 
@@ -334,7 +335,7 @@ module.exports.updateData = function (pid, edited_key, edited_value) {
   Delete a row's data from the database.
 */
 module.exports.deleteData = function (pid, pid_table) {
-  let status=false
+  
   let db = SQL.dbOpen(window.model.db)
   if (db !== null) {
     let query = 'UPDATE `_table_main` SET `_delete_flag` = "1" WHERE `_id_table` = "'+[pid]+'" ;'
@@ -342,7 +343,7 @@ module.exports.deleteData = function (pid, pid_table) {
     try {
       if (statement.run()) {
         console.log('Deleted', pid)
-        status=true  
+        $('#row'+ pid_table +'_'+pid).remove()
       } else {
         console.log('model.deleteData', 'No data found for person_id =', pid)
       }
@@ -353,7 +354,6 @@ module.exports.deleteData = function (pid, pid_table) {
       
     }
   }
-  return status
 }
 module.exports.getRowData = function (pid, db) {
   let query = 'SELECT * FROM `_table_main` WHERE `_id_table` IS ? ;'
@@ -371,13 +371,12 @@ module.exports.getRowData = function (pid, db) {
   return data
 }
 
-module.exports.uploadData = function (pid) {
+module.exports.uploadData = function (pid, pid_table) {
   // console.log('data:image/jpeg;base64,'+fs.readFileSync(path.join(__dirname, '../../../images', 'x-icon.png'), 'base64'));
   $('#modalMessage').html('Uploading, Please wait ... ');
-  $("#myModalFooter").hide();
+  // $("#myModalFooter").hide();
   $('#myModal').modal('show');
 
-  let status=false
   var userData = window.model.getUserData()
   if (!userData[0]){
     $('#modalMessage').html('Please login first to upload the data.');
@@ -387,14 +386,14 @@ module.exports.uploadData = function (pid) {
   
   
   
-
+  var continue_=true;
   let db = SQL.dbOpen(window.model.db)
   if (db !== null) {
     let data = window.model.getRowData(pid, db)
 
     var options = {
       method: 'POST',
-      uri: 'http://www.naxa.com.np/cta/api/index.php/enter_record',
+      uri: 'https://cta.wwfnepal.org.np/api/index.php/enter_record',
       form: {
           // Like <input type="text" name="name">
           data: data[0]['_table_json'],
@@ -407,59 +406,88 @@ module.exports.uploadData = function (pid) {
     };
     if (data[0]['_table_photo'] != "no_photo" && data[0]['_table_photo'] != "" && data[0]['_table_photo'].length > 8){
       var imgs = data[0]['_table_photo'].split(",");
+      var photo = {};
       $.each( imgs, function( key, img ) {
-        var imageAsBase64 = fs.readFileSync(path.join(__dirname, 'images', img), 'base64');
-        // console.log(path.join(__dirname, 'images', 'x-icon.png'), 'data:image/jpeg;base64,' , imageAsBase64)
-        key = key + 1;
-        if (key == 1){
-          option['photo'] = 'data:image/jpeg;base64,'+imageAsBase64  
-        }else{
-        option['photo'+key] = 'data:image/jpeg;base64,'+imageAsBase64
+        try {
+          var imageAsBase64 = fs.readFileSync(path.join(__dirname, 'Photos', img ), 'base64');
+          
+          key = key + 1;
+          if (key == 1){
+            photo['photo'] = imageAsBase64  
+          }else{
+            photo['photo'+key] = imageAsBase64
+          }
+        }
+        catch (error){ 
+          console.log(error);
+          var r = confirm('Photo '+ img + ' not found. Continue Uploading?');
+          if (r == true) {
+              console.log("continuing");
+          } else {
+
+              $('#myModal').modal('hide');
+              continue_ = false;
+              return;
+          } 
         }
       });
-    }
-    console.log(options);
-    rp(options)
-      .then(function (body) {
-          request(options, function (error, response, body) {
-            var BODY = JSON.parse(body);
-            console.log(BODY);
-            if(BODY.status ===200 ) {
-              $('#modalMessage').html('Submission Successful.');
-              $("#myModalFooter").show();
-              window.model.markAsUploaded(pid, db);
-              status = true
-             }
-            else {
-              $('#modalMessage').html('Submission failed. Data invalid.');
-              $("#myModalFooter").show();
+      
+      options['form']['photo'] = JSON.stringify(photo);
 
-              // console.log('statusCode:', response && response.statusCode); 
-              console.log('body:', body);
-              status = false
-            }
-            
-          });    
-        })
-      .catch(function (err) {
-          $('#modalMessage').html('Submission failed. Please check your internet connection and try again.');
-          $("#myModalFooter").show();
-          console.log(err);
-      });
+      console.log('logggg');
+    }
+    else{
+      continue_=true;
+    }
+    console.log(continue_);
+    if(continue_){
+      console.log("Here............", continue_);
+      console.log(options);
+      rp(options)
+        .then(function (body) {
+            request(options, function (error, response, body) {
+              var BODY = JSON.parse(body);
+              console.log(BODY);
+              if(BODY.status ===200 ) {
+                window.model.markAsUploaded(pid, pid_table);
+                $('#modalMessage').html('Submission Successful.');
+                $("#myModalFooter").show();
+                
+               }
+              else {
+                $('#modalMessage').html('Submission failed. Data invalid.');
+                $("#myModalFooter").show();
+                $('#myModal').modal('show');
+                // console.log('statusCode:', response && response.statusCode); 
+                console.log('body:', body);
+              }
+              
+            });    
+          })
+        .catch(function (err) {
+            $('#modalMessage').html('Submission failed. Please check your internet connection and try again.');
+            $("#myModalFooter").show();
+            console.log(err);
+        });
+    }
+    else{
+      console.log("Request stopped.");
+    }
+
   }
   
   SQL.dbClose(db, window.model.db) 
-  return status
 }
 
 
-module.exports.markAsUploaded = function (pid) {
+module.exports.markAsUploaded = function (pid, pid_table) {
       let db1 = SQL.dbOpen(window.model.db)
       let query = 'UPDATE `_table_main` SET `_table_status` = "Sent" WHERE `_id_table` = "'+[pid]+'" ;'
       let statement = db1.prepare(query)
       try {
         if (statement.run()) {
           console.log('Submitted', pid)
+          $('#row' + pid_table +'_'+pid).remove()
         } else {
           console.log('model.uploadData', 'No data found for row =', pid)
         }

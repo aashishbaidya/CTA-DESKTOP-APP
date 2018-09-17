@@ -1,17 +1,35 @@
 <div class="container-fluid">
-    <h1>CTA Desktop App for Offline Data Management</h1>
-    
+	
 
-    <div id="loginForm">    
-    <h3 id ="status">USER LOGIN</h3>
-	    <br>
+    <br>
+   <div class="row">
+	   <div class=" col-md-6"> 
+	   		<center>
+		   		<div class="panel">
+				   <h2>Import Data</h2>
+				   <p>Import Data from mobile database. </p>
+				   <p><strong>Info! </strong>Database files have '.db' as their file extension.</p>
+			   	</div>
+		   			
+		   	    <a href="#" onclick="window.view.openFile()" class="btn btn-secondary">Choose File to Import</a>
+		   		
+		   	</center>
+	   </div>
+	   <div class=" col-md-6" id="loginForm">
+		   <div class="panel">
+			   <h2>User Login</h2>
+			   <p>Please enter your email and password</p>
+		   </div>
 	        <form id="login">
-	            <input type="text" id="username" placeholder="Username"><br>
-	            <input type="password" id="password" placeholder="Password"><br>
-	            <button type="button" class="btn btn-primary" value="Submit" onclick="window.view.userLogin()">Submit</button>
-	    </form>
-	</div>
+	        	<div class="form-group">
+	            <input type="text" class="form-control" id="username" placeholder="Username"><br>
+	            
+	            <input type="password" class="form-control" id="password" placeholder="Password"><br>
+	            </div>
 
-    <a href="#" onclick="window.view.openFile()">Import Data</a>
+	            <button type="button" class="btn btn-secondary" value="Submit" onclick="window.view.userLogin()">Login</button>
+		    </form>
+		</div>
+	</div>
 </div>
 

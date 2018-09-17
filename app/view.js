@@ -47,8 +47,11 @@ module.exports.home = function (e) {
   $('#main_body').html(homePage)
   let rowsObject = window.model.getUserData()
   if (rowsObject[0]){
-    let elem = `<p>Logged in as `+ rowsObject[0].username +`</p>
-                <button type="button" class="btn btn-primary" value="Submit" onclick="window.model.userLogOut()">Log Out</button>`
+    let elem = `<div class="panel">
+                  <h2>`+rowsObject[0].username+`</h2>
+               </div>
+              <button type="button" class="btn btn-secondary" value="Submit" onclick="window.model.userLogOut()">Log Out</button>`
+
     $('#loginForm').html(elem)
   }
 }
@@ -84,14 +87,14 @@ module.exports.showTableData = function (rowsObject) {
   let body_cols=''
   for (let rowId in rowsObject) {
     let row = rowsObject[rowId]
-    let col='<tr id="row_'+ row._id_table +'">'
+    let col='<tr id="row'+ row._table_id + '_'+ row._id_table +'">'
     let jsonData = JSON.parse(row._table_json)
     Object.keys(jsonData.formdata).forEach(function(key,index) {
       col += '<td id="'+ row._id_table +'-cell-'+ key +'" ondblclick="editCell(this.id)">'+ jsonData.formdata[key] +'</td>'
     })
     col+='<td><button class="upload" id="upload-pid_' + row._id_table + '_' + row._table_id +
        '">Upload</button></td>' +
-       '<td><button><img id="del-pid_' + row._id_table + '_' + row._table_id +
+       '<td><button><img class="delete" id="del-pid_' + row._id_table + '_' + row._table_id +
        '" height="15px" width="15px" src="' + path.join(__dirname, 'img', 'x-icon.png') +
        '"></button></div></td>'
     col += '</tr>'
@@ -112,6 +115,7 @@ module.exports.showTableData = function (rowsObject) {
   
   $('#data-list img.delete').each(function (idx, obj) {
     $(obj).on('click', function () {
+      console.log('delete')
       status = window.view.deleteData(this.id)
     })
   })
@@ -155,17 +159,12 @@ module.exports.editOnTableView = function (td_id) {
 
 module.exports.deleteData = function (pid) {
   let status = model.deleteData(pid.split('_')[1], pid.split('_')[2])
-  if (status){
-    $('#row_'+pid.split('_')[1]).remove()
-  }
+  console.log('delete', pid)
+ 
 }
 
 module.exports.uploadData = function (pid) {
-  console.log('here uploaded')
   let status = model.uploadData(pid.split('_')[1], pid.split('_')[2])
-  if (status){
-    $('#row_'+pid.split('_')[1]).remove()
-  }
 }
 module.exports.getFormFieldValues = function (formId) {
   let keyValue = {columns: [], values: []}
@@ -182,14 +181,13 @@ module.exports.userLogin = function() {
   $('#myModal').modal('show');
   var username = document.getElementById("username").value;
   var password = document.getElementById("password").value;
-  console.log(username,password);
   
   var options = {
     method: 'POST',
-    uri: 'http://www.naxa.com.np/cta/LoginApi/check_user',
+    url: 'https://cta.wwfnepal.org.np/LoginApi/check_user',
     form: {
         
-        data: JSON.stringify( {"username":username,"password":password} )
+        data: JSON.stringify({"username":username,"password":password})
     },
     headers: {
        
@@ -199,7 +197,6 @@ module.exports.userLogin = function() {
     .then(function (body) {
         request(options, function (error, response, body) {
           var BODY = JSON.parse(body);
-          console.log(BODY);
           if (BODY.status === 201) {
             $('#modalMessage').html('Login failed. Invalid username or password. Try again.');
             $("#myModalFooter").show();
@@ -222,5 +219,5 @@ module.exports.userLogin = function() {
         $("#myModalFooter").show();
         console.log(err);
     });
-   
+   $("#myModalFooter").show();
 }
